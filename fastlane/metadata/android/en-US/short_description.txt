@@ -1,0 +1,1 @@
+A simple login and session manager for your encrypted device.

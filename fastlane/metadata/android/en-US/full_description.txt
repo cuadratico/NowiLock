@@ -1,0 +1,1 @@
+A log manager encrypted with symmetric cryptography (AES/GCM/256) to which you can add small notes to remember the context of each session start.
