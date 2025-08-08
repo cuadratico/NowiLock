@@ -13,8 +13,8 @@ android {
         applicationId = "com.nowilock"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -46,7 +46,6 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.biometric)
-    implementation("androidx.work:work-runtime-ktx:2.10.2")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

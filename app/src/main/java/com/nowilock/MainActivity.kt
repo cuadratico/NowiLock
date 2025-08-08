@@ -5,8 +5,10 @@ import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.shapes.Shape
+import android.media.audiofx.Virtualizer
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
@@ -29,10 +31,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import androidx.work.Constraints
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.Worker
 import com.google.android.material.imageview.ShapeableImageView
 import com.nowilock.db.Companion.logs_list
 import com.nowilock.recy.adapter_logs
@@ -81,7 +79,7 @@ class MainActivity : AppCompatActivity() {
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 100)
         }
 
         if (pref.getBoolean("service", false)) {
@@ -182,7 +180,6 @@ class MainActivity : AppCompatActivity() {
                             activate_info.setImageResource(R.drawable.circle_green)
                             pref.edit().putBoolean("service", true).commit()
                             ContextCompat.startForegroundService(applicationContext, Intent(applicationContext, log_regi::class.java))
-                            Toast.makeText(applicationContext, "Registration activated", Toast.LENGTH_SHORT).show()
                         }
 
                         override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
@@ -208,4 +205,21 @@ class MainActivity : AppCompatActivity() {
             insets
         }
     }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String?>,
+        grantResults: IntArray,
+        deviceId: Int
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults, deviceId)
+
+        if (requestCode == 100 && grantResults[0] == -1) {
+            Toast.makeText(this, "Notifications are necessary", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(Settings.ACTION_ALL_APPS_NOTIFICATION_SETTINGS))
+            finishAffinity()
+        }
+    }
+
+
 }
