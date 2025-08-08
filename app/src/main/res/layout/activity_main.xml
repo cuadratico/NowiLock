@@ -13,6 +13,17 @@
         android:layout_height="wrap_content"
         />
 
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/activate_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/circle_red"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="20dp"
+        />
+
     <TextView
         android:id="@+id/info"
         android:layout_width="200dp"
@@ -26,4 +37,29 @@
         android:gravity="center"
         android:fontFamily="monospace"
         />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/service_status"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/border_25"
+        android:backgroundTint="@color/blue_oscuro"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginBottom="20dp"
+        >
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/icon_service"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:src="@drawable/pause_button"
+            />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
