@@ -6,8 +6,8 @@
 
 NowiLock is a login manager that will let you know when someone has logged into your Android device. Logins remain encrypted under your password and the cryptographic key is stored on secure hardware.
 
-# APK Security V0.0.1
-https://www.virustotal.com/gui/file/006de1be3b8d7b3444af546fc54c9d433de54d592df32c942f4bddb513bcbf89?nocache=1
+# APK Security V0.1.1
+https://www.virustotal.com/gui/file/8211d78e0aa0b9fb02209edad17b1941bcd51fd7e275e039b0668b14b688f779?nocache=1
 
 # Technologies used
  - Languages: Kotlin and SQL
