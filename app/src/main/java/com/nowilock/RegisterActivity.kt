@@ -21,6 +21,7 @@ import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -48,6 +49,8 @@ class RegisterActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.register_activity)
 
+
+        delegate.localNightMode = AppCompatDelegate.MODE_NIGHT_YES
 
         val opor = findViewById<TextView>(R.id.opor)
         val input_pass = findViewById<EditText>(R.id.input_pass)
@@ -104,8 +107,6 @@ class RegisterActivity : AppCompatActivity() {
                 block()
             }
         }
-
-
 
         input_pass.addTextChangedListener {dato ->
 

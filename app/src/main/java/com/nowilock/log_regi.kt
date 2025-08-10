@@ -60,7 +60,7 @@ class log_regi: Service() {
                     c.init(Cipher.ENCRYPT_MODE, ks.getKey(pref.getString("key", null), null))
 
                     db.insert(Base64.getEncoder().withoutPadding().encodeToString(c.doFinal(
-                        LocalDateTime.now().toString().split("T").joinToString(" | ").toByteArray())), "Put a note",
+                        LocalDateTime.now().toString().split("T").joinToString("  ").toByteArray())), "Put a note",
                         Base64.getEncoder().withoutPadding().encodeToString(c.iv))
                 }
             }
