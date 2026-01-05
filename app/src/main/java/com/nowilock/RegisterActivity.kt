@@ -5,10 +5,10 @@ import android.app.Dialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.hardware.biometrics.BiometricManager
-import android.hardware.biometrics.BiometricPrompt
+import android.media.audiofx.Virtualizer
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.text.method.PasswordTransformationMethod
@@ -22,6 +22,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -30,6 +32,7 @@ import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.Dispatchers
@@ -38,11 +41,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.security.KeyStore
 import java.security.MessageDigest
+import java.security.SecureRandom
 import java.util.Base64
 import javax.crypto.KeyGenerator
 
 class RegisterActivity : AppCompatActivity() {
-    @RequiresApi(Build.VERSION_CODES.O)
+
+    private var back_all: ConstraintLayout? = null
+    private var back_bio_error: ConstraintLayout? = null
+
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,13 +59,15 @@ class RegisterActivity : AppCompatActivity() {
 
         delegate.localNightMode = AppCompatDelegate.MODE_NIGHT_YES
 
+        back_all = findViewById(R.id.back_all)
+        val info = findViewById<TextView>(R.id.info)
         val opor = findViewById<TextView>(R.id.opor)
         val input_pass = findViewById<EditText>(R.id.input_pass)
         val progress = findViewById<LinearProgressIndicator>(R.id.progress)
-        val visible_all = findViewById<ConstraintLayout>(R.id.visible_all)
-        val visible_icon = findViewById<ShapeableImageView>(R.id.visible_icon)
-        val create = findViewById<ConstraintLayout>(R.id.bottom_create)
-        create.visibility = View.INVISIBLE
+        val create = findViewById<ShapeableImageView>(R.id.bottom_create)
+
+        back_bio_error = findViewById(R.id.back_all_bio_error)
+        val info_bio_error = findViewById<ShapeableImageView>(R.id.info_bio_error)
 
         val mk = MasterKey.Builder(this)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -99,7 +108,7 @@ class RegisterActivity : AppCompatActivity() {
 
         if (!pref.getBoolean("start", false))  {
             opor.visibility = View.INVISIBLE
-            create.visibility = View.VISIBLE
+            info.text = "Create your password to encrypt your records in NowiLock"
         }else {
             if (!pref.getBoolean("block", false)) {
                 opor.text = "*".repeat(pref.getInt("opor", 9) - 1)
@@ -108,96 +117,86 @@ class RegisterActivity : AppCompatActivity() {
             }
         }
 
-        input_pass.addTextChangedListener {dato ->
-
-            if (dato!!.isNotEmpty() && pref.getBoolean("start", false)) {
-
-                val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-                if (input_pass.text.length == pref.getString("key", "")?.length) {
-
-                    if (ks.getKey(input_pass.text.toString(), null) != null && Base64.getEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(input_pass.text.toString().toByteArray())) == pref.getString("hash", "")) {
-
-                        if (androidx.biometric.BiometricManager.from(this).canAuthenticate(androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL or androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG) == androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS) {
-
-                            val promt = androidx.biometric.BiometricPrompt.PromptInfo.Builder()
-                                .setTitle("Who are you?")
-                                .setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL or androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                                .setConfirmationRequired(true)
-                                .build()
-
-                            androidx.biometric.BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : androidx.biometric.BiometricPrompt.AuthenticationCallback() {
-
-                                    override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
-                                        super.onAuthenticationSucceeded(result)
-                                        val intent =
-                                            Intent(applicationContext, MainActivity::class.java)
-                                                .putExtra("ali", input_pass.text.toString())
-                                        startActivity(intent)
-                                        finish()
-                                    }
-
-                                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                                        super.onAuthenticationError(errorCode, errString)
-                                        input_pass.setText("")
-                                        recreate()
-                                    }
-                                }).authenticate(promt)
-                        }
-
-                    } else {
-                        pref.edit().putInt("opor", pref.getInt("opor", 9) - 1).commit()
-
-                        if (pref.getInt("opor", 9) <= 1) {
-                            pref.edit().putBoolean("block", true).commit()
-                            block()
-                        } else {
-                            opor.text = "*".repeat(pref.getInt("opor", 9) - 1)
-                            input_pass.setText("")
-                        }
-                    }
-                }
-            }
-            entropy(dato.toString(), progress)
+        input_pass.addTextChangedListener {
+            entropy(it.toString(), progress)
         }
 
-        var visi = false
-        visible_all.setOnClickListener {
+        fun secure_update () {
+            pref.edit().putString("key_u", input_pass.text.toString()).commit()
+            pref.edit().putString("salt", Base64.getEncoder().withoutPadding().encodeToString(SecureRandom().generateSeed(16))).commit()
+            pref.edit().putString("hash", Base64.getEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(input_pass.text.toString().toByteArray() + Base64.getDecoder().decode(pref.getString("salt", "")) ))).commit()
+        }
 
-            if (visi) {
-                input_pass.transformationMethod = PasswordTransformationMethod.getInstance()
-                visible_icon.setImageResource(R.drawable.close_eye)
-                visi = false
-            }else {
-                input_pass.transformationMethod = null
-                visible_icon.setImageResource(R.drawable.open_eye)
-                visi = true
-            }
+        info_bio_error.setOnClickListener {
 
-            input_pass.setSelection(input_pass.text.length)
+            MaterialAlertDialogBuilder(this).apply {
+                setTitle("Because you cannot log in")
+                setMessage("You cannot log in because you have neither biometric data nor a PIN set up on your device. NowiLock requires this type of authentication to be used securely.")
+                setPositiveButton("Set up a PIN or biometric data") {_, _ ->
+                    startActivity(Intent(Settings.ACTION_SETTINGS))
+                }
+                setNegativeButton("Later") {_, _ -> }
+            }.show()
         }
 
         create.setOnClickListener {
-
             if (input_pass.text.isNotEmpty()) {
 
-                val kgs = KeyGenParameterSpec.Builder(input_pass.text.toString(), KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
-                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                    .build()
-                val kg = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
-                    init(kgs)
+                if (!pref.getBoolean("start", false)) {
+
+                    val kgs = KeyGenParameterSpec.Builder(input_pass.text.toString(), KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                        .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                        .build()
+
+                    val kg = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
+                                init(kgs)
+                    }
+                    kg.generateKey()
+
+                    pref.edit().putBoolean("start", true).commit()
+                    secure_update()
+
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finish()
+                } else {
+                    if (MessageDigest.isEqual(Base64.getDecoder().decode(pref.getString("hash", "")), MessageDigest.getInstance("SHA256").digest(input_pass.text.toString().toByteArray() + Base64.getDecoder().decode(pref.getString("salt", ""))))) {
+                        val promt = BiometricPrompt.PromptInfo.Builder()
+                            .setTitle("Authenticate yourself")
+                            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+                            .build()
+
+                        BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
+
+                            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                                super.onAuthenticationSucceeded(result)
+
+                                secure_update()
+
+                                startActivity(Intent(this@RegisterActivity, MainActivity::class.java))
+                                finish()
+                            }
+
+                            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                                super.onAuthenticationError(errorCode, errString)
+                                Toast.makeText(this@RegisterActivity, "Authentication error", Toast.LENGTH_SHORT).show()
+                                input_pass.setText("")
+                            }
+                        }).authenticate(promt)
+
+                    } else {
+                        input_pass.setText("")
+
+                        if (opor.text.length == 1) {
+                            pref.edit().putBoolean("block", true).commit()
+                            recreate()
+                        } else {
+                            pref.edit().putInt("opor", pref.getInt("opor", 9) - 1).commit()
+                            opor.text = "*".repeat(pref.getInt("opor", 9) - 1)
+                        }
+
+                    }
                 }
-                kg.generateKey()
-
-                pref.edit().putBoolean("start", true).commit()
-                pref.edit().putString("key", input_pass.text.toString()).commit()
-                pref.edit().putString("hash", Base64.getEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(input_pass.text.toString().toByteArray()))).commit()
-
-                val intent = Intent(this, MainActivity::class.java)
-                    .putExtra("ali", input_pass.text.toString())
-
-                startActivity(intent)
-                finish()
 
             }else {
                 Toast.makeText(this, "You need to specify a password", Toast.LENGTH_SHORT).show()
@@ -213,6 +212,18 @@ class RegisterActivity : AppCompatActivity() {
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        if (BiometricManager.from(this).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL) != BiometricManager.BIOMETRIC_SUCCESS) {
+            back_all?.visibility = View.INVISIBLE
+            back_bio_error?.visibility = View.VISIBLE
+        } else {
+            back_all?.visibility = View.VISIBLE
+            back_bio_error?.visibility = View.INVISIBLE
         }
     }
 }

@@ -13,8 +13,7 @@
         android:id="@+id/all"
         android:layout_width="320dp"
         android:layout_height="wrap_content"
-        android:background="@drawable/border_25"
-        android:backgroundTint="@color/blue_oscuro"
+        android:background="@drawable/stroke_blue"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -39,7 +38,7 @@
 
         <View
             android:layout_width="0dp"
-            android:layout_height="5dp"
+            android:layout_height="3dp"
             app:layout_constraintEnd_toEndOf="@id/log"
             app:layout_constraintStart_toStartOf="@id/log"
             app:layout_constraintTop_toBottomOf="@id/log"
@@ -74,38 +73,26 @@
         app:layout_constraintStart_toStartOf="@id/all"
         />
 
-    <androidx.appcompat.widget.AppCompatButton
+    <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/edit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/border_25"
-        android:backgroundTint="@color/blue_nowi"
-        android:textColor="@color/white"
-        android:textAllCaps="false"
+        android:src="@drawable/edit"
         app:layout_constraintStart_toStartOf="@id/all"
         app:layout_constraintTop_toBottomOf="@id/all"
         app:layout_constraintEnd_toStartOf="@id/center"
         android:layout_marginTop="20dp"
-        android:text="Edit"
-        android:textSize="17dp"
-        android:fontFamily="monospace"
         />
 
-    <androidx.appcompat.widget.AppCompatButton
+    <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/delete"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/border_25"
-        android:backgroundTint="@color/blue_nowi"
-        android:textColor="@color/white"
-        android:textAllCaps="false"
+        android:src="@drawable/delete"
         app:layout_constraintEnd_toEndOf="@id/all"
         app:layout_constraintTop_toBottomOf="@id/all"
         app:layout_constraintStart_toEndOf="@id/center"
         android:layout_marginTop="20dp"
-        android:text="Delete"
-        android:textSize="17dp"
-        android:fontFamily="monospace"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

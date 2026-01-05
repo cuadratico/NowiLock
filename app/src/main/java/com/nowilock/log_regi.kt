@@ -57,7 +57,7 @@ class log_regi: Service() {
                     val db = db(applicationContext)
 
                     val c = Cipher.getInstance("AES/GCM/NoPadding")
-                    c.init(Cipher.ENCRYPT_MODE, ks.getKey(pref.getString("key", null), null))
+                    c.init(Cipher.ENCRYPT_MODE, ks.getKey(pref.getString("key_u", null), null))
 
                     db.insert(Base64.getEncoder().withoutPadding().encodeToString(c.doFinal(
                         LocalDateTime.now().toString().split("T").joinToString("  ").toByteArray())), "Put a note",

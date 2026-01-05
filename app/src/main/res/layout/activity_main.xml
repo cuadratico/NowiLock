@@ -5,7 +5,9 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:background="@color/grew_o_2"
+    >
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recy"
@@ -21,15 +23,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@drawable/circle_red"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
         android:layout_marginEnd="20dp"
         />
 
     <TextView
         android:id="@+id/info"
-        android:layout_width="200dp"
+        android:layout_width="300dp"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -41,28 +43,15 @@
         android:fontFamily="monospace"
         />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/service_status"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:background="@drawable/border_25"
-        android:backgroundTint="@color/blue_oscuro"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/pause_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginBottom="20dp"
-        >
-
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/icon_service"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:src="@drawable/pause_button"
-            />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

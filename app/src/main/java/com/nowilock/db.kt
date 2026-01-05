@@ -4,8 +4,9 @@ import android.R
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.util.Log
 
-data class logs (var time: String, var note: String, val iv: String)
+data class logs (var time: String, val note: String, val iv: String, val id: Int)
 class db(context: Context): SQLiteOpenHelper(context, "db.db", null, 1) {
     override fun onCreate(db: SQLiteDatabase?) {
 
@@ -38,7 +39,7 @@ class db(context: Context): SQLiteOpenHelper(context, "db.db", null, 1) {
         val query = db.rawQuery("SELECT * FROM db_logs", null, null)
 
         fun add () {
-            logs_list.add(logs(query.getString(1), query.getString(2), query.getString(3)))
+            logs_list = logs_list.plus(logs(query.getString(1), query.getString(2), query.getString(3), query.getInt(0)))
         }
 
         if (query.moveToFirst()) {
@@ -52,6 +53,6 @@ class db(context: Context): SQLiteOpenHelper(context, "db.db", null, 1) {
         }
     }
     companion object {
-        val logs_list = mutableListOf<logs>()
+        var logs_list = listOf<logs>()
     }
 }
