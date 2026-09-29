@@ -11,17 +11,19 @@ android {
 
     defaultConfig {
         applicationId = "com.nowilock"
-        minSdk = 26
+        minSdk = 29
         targetSdk = 36
-        versionCode = 5
-        versionName = "0.2.3"
+        versionCode = 6
+        versionName = "1.2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -39,6 +41,7 @@ android {
 
 dependencies {
 
+    implementation(libs.lottie)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

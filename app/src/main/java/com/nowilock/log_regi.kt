@@ -1,67 +1,57 @@
 package com.nowilock
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.Build
 import android.os.IBinder
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import java.security.KeyStore
+import com.nowilock.db_space.db
+import com.nowilock.opti_funs.cip_ins
+import org.json.JSONObject
 import java.time.LocalDateTime
 import java.util.Base64
 import javax.crypto.Cipher
 
+
 class log_regi: Service() {
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun noti(): Notification {
-
-        val channel = NotificationChannel("noti_lock", "channel_oti", NotificationManager.IMPORTANCE_LOW)
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(channel)
-
-        return NotificationCompat.Builder(this, "noti_lock").apply {
-            setContentTitle("NowiLock")
-            setContentText("Log logging is active")
-            setSmallIcon(R.drawable.padlock)
-        }
-            .build()
-    }
-
-     @RequiresApi(Build.VERSION_CODES.O)
      override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
 
-        startForeground(1, noti())
+        startForeground(1,
+            NotificationCompat.Builder(this, "noti_lock").apply {
+                setContentTitle("NowiLock")
+                setContentText("Log logging is active")
+                setSmallIcon(R.drawable.padlock)
+            }.build()
+        )
 
         val broadcast = object: BroadcastReceiver() {
             override fun onReceive(con: Context?, intent: Intent?) {
                 if (intent?.action == Intent.ACTION_USER_PRESENT) {
-                    val mk = MasterKey.Builder(applicationContext)
-                        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                        .build()
-                    val pref = EncryptedSharedPreferences.create(applicationContext, "ap", mk,
+
+                    val pref = EncryptedSharedPreferences.create(
+                        applicationContext, "ap",
+                        MasterKey.Builder(applicationContext).apply {
+                            setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                        }.build(),
                         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
+                        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                    )
 
-                    val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+                    val c = cip_ins(pref, Cipher.ENCRYPT_MODE)
 
-                    val db = db(applicationContext)
-
-                    val c = Cipher.getInstance("AES/GCM/NoPadding")
-                    c.init(Cipher.ENCRYPT_MODE, ks.getKey(pref.getString("key_u", null), null))
-
-                    db.insert(Base64.getEncoder().withoutPadding().encodeToString(c.doFinal(
-                        LocalDateTime.now().toString().split("T").joinToString("  ").toByteArray())), "Put a note",
-                        Base64.getEncoder().withoutPadding().encodeToString(c.iv))
+                    db(applicationContext).insert(
+                        pref,
+                        JSONObject().apply {
+                            put("meta_data", Base64.getEncoder().withoutPadding().encodeToString(c.doFinal(LocalDateTime.now().toString().split("T").joinToString("  ").toByteArray())))
+                            put("meta_iv", Base64.getEncoder().withoutPadding().encodeToString(c.iv))
+                        }.toString()
+                    )
                 }
             }
 

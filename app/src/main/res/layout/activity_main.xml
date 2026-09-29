@@ -6,27 +6,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:background="@color/grew_o_2"
+    android:background="@color/black"
     >
+
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recy"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/service_status"
-        android:layout_marginBottom="10dp"
+        android:layout_height="match_parent"
+        android:paddingBottom="75dp"
+        android:paddingTop="70dp"
+        android:clipToPadding="false"
         />
 
-    <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/activate_info"
+    <SearchView
+        android:id="@+id/search"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/circle_red"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="20dp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="10dp"
         />
 
     <TextView
@@ -40,18 +41,34 @@
         android:textSize="20dp"
         android:text="From now on, your device logins will be logged in NowiLock."
         android:gravity="center"
-        android:fontFamily="monospace"
+        android:fontFamily="@font/pixel"
         />
 
-    <com.google.android.material.imageview.ShapeableImageView
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/service_status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/pause_button"
+        android:layout_width="60dp"
+        android:layout_height="50dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginBottom="20dp"
-        />
+        android:background="@drawable/border_25"
+        android:backgroundTint="@color/b_black"
+        >
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/s_s_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/no_regi"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

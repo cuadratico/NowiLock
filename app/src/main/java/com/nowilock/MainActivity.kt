@@ -1,39 +1,19 @@
 package com.nowilock
 
-import android.annotation.SuppressLint
-import android.app.Dialog
-import android.app.NotificationManager
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.shapes.Shape
-import android.media.audiofx.Virtualizer
-import android.os.Build
 import android.os.Bundle
-import android.preference.PreferenceManager
-import android.provider.Settings
-import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
 import android.widget.EditText
+import android.widget.SearchView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricPrompt
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.VIEW_MODEL_STORE_OWNER_KEY
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -41,190 +21,204 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.imageview.ShapeableImageView
-import com.nowilock.db.Companion.logs_list
+import com.nowilock.db_space.db
+import com.nowilock.opti_funs.cip_ins
+import com.nowilock.opti_funs.create_biometric
+import com.nowilock.opti_funs.create_dialog
+import com.nowilock.opti_funs.load
 import com.nowilock.recy.adapter_logs
-import kotlinx.coroutines.CoroutineStart
+import com.nowilock.recy.logs_data
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.security.KeyStore
+import org.json.JSONObject
 import java.util.Base64
-import java.util.jar.Manifest
 import javax.crypto.Cipher
-import javax.crypto.spec.GCMParameterSpec
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var scope: Job
     private lateinit var adapter: adapter_logs
-    private lateinit var mk: MasterKey
     private lateinit var pref: SharedPreferences
+    private var logs_list = listOf<logs_data>()
 
-    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        delegate.localNightMode = AppCompatDelegate.MODE_NIGHT_YES
+        pref = EncryptedSharedPreferences.create(
+            this,
+            "ap", MasterKey.Builder(this).apply {
+                setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            }.build(),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
 
-        val promt = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Authenticate yourself")
-            .setAllowedAuthenticators(BiometricManager.Authenticators.DEVICE_CREDENTIAL or BiometricManager.Authenticators.BIOMETRIC_STRONG)
-            .build()
 
-        mk = MasterKey.Builder(this)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        pref = EncryptedSharedPreferences.create(this, "ap", mk, EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
-
+        val search = findViewById<SearchView>(R.id.search)
 
         val recy = findViewById<RecyclerView>(R.id.recy)
+
         val information = findViewById<TextView>(R.id.info)
-        val service_status = findViewById<ShapeableImageView>(R.id.service_status)
-        val activate_info = findViewById<ShapeableImageView>(R.id.activate_info)
-        information.visibility = View.INVISIBLE
+
+        val service_status = findViewById<ConstraintLayout>(R.id.service_status)
+        val s_s_icon = findViewById<ShapeableImageView>(R.id.s_s_icon)
+
         val db = db(this)
 
+        if (pref.getBoolean("service", false)) {
+            s_s_icon.setImageResource(R.drawable.regi)
+        }
+
         adapter = adapter_logs(logs_list, { logs_data ->
-            val edit_dialog = Dialog(this)
-            val edit_view = LayoutInflater.from(this).inflate(R.layout.edit_note, null)
 
-            val input_note = edit_view.findViewById<EditText>(R.id.input_note)
-            val edit_confirmation = edit_view.findViewById<ShapeableImageView>(R.id.edit)
+            val (dialog_pre, view_pre) = create_dialog(this, R.layout.edit_note)
 
-            input_note.setText(logs_data.note)
+            val input_note = view_pre.findViewById<EditText>(R.id.input_note)
+            val edit_note = view_pre.findViewById<ShapeableImageView>(R.id.edit)
 
-            edit_confirmation.setOnClickListener {
-                if (input_note.text.isNotEmpty()) {
-                    db.update(logs_data.iv, input_note.text.toString())
-                    logs_list = logs_list.map { if (it.id == logs_data.id) { logs_data.copy(note = input_note.text.toString()) } else { it } }
-                    adapter.update_list(logs_list)
-                    edit_dialog.dismiss()
-                }else {
-                    Toast.makeText(this, "You haven't specified anything", Toast.LENGTH_SHORT).show()
+
+            create_biometric(this@MainActivity, {
+                val load = load(this, R.raw.desen_logs, "Decrypting your note")
+
+                lifecycleScope.launch (Dispatchers.IO) {
+
+                    var note = "note".toByteArray()
+                    if (logs_data.en == 1) {
+                        val json_note = JSONObject(logs_data.note_global)
+
+                        val c = cip_ins(pref, Cipher.DECRYPT_MODE, json_note.getString("iv_note"))
+                        note = c.doFinal(Base64.getDecoder().decode(json_note.getString("data_note")))
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        input_note.setText(String(note))
+                        load.dismiss()
+                    }
+
+                    note.fill(0)
+
                 }
-            }
-            edit_dialog.setContentView(edit_view)
-            edit_dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            edit_dialog.show()
-        }, { logs_data ->
-                    BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
+            }, {
+                dialog_pre.dismiss()
+            })
 
-                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                            super.onAuthenticationSucceeded(result)
-                            db.delete(logs_data.iv)
-                            logs_list = logs_list.minus(logs_data)
-                            if (logs_list.isEmpty()) {
-                                information.visibility = View.VISIBLE
-                            }
+            edit_note.setOnClickListener {
+                create_biometric(this, {
+                    val load = load(this, R.raw.desen_logs, "Encrypting your note")
+
+                    lifecycleScope.launch (Dispatchers.IO) {
+
+                        val c = cip_ins(pref, Cipher.ENCRYPT_MODE)
+                        val json = JSONObject().apply {
+                            put("data_note", Base64.getEncoder().withoutPadding().encodeToString(c.doFinal(input_note.text.toString().toByteArray())))
+                            put("iv_note", Base64.getEncoder().withoutPadding().encodeToString(c.iv))
+                        }.toString()
+
+                        db.update(logs_data.id.toString(), json)
+                        logs_list = logs_list.map { if ( it.id == logs_data.id ) { it.copy(note_global = json, en = 1) } else { it } }
+
+                        withContext(Dispatchers.Main) {
+                            load.dismiss()
+                            dialog_pre.dismiss()
                             adapter.update_list(logs_list)
                         }
 
-                        override fun onAuthenticationFailed() {
-                            super.onAuthenticationFailed()
-                            Toast.makeText(this@MainActivity, "You need to try again", Toast.LENGTH_SHORT).show()
+                    }
+                }, {})
+            }
+
+        }, { logs_data ->
+
+            MaterialAlertDialogBuilder(this).apply {
+                setMessage("Do you want to permanently delete these logs?")
+                setPositiveButton("Delete") {_, _ ->
+                    create_biometric(this@MainActivity, {
+
+                        lifecycleScope.launch (Dispatchers.IO) {
+                            db.delete(pref, logs_data.id.toString())
+                            logs_list = logs_list.minus(logs_data)
+
+                            withContext(Dispatchers.Main) {
+                                if (logs_list.isEmpty()) {
+                                    pref.edit().putBoolean("db_full", false).commit()
+                                    information.visibility = View.VISIBLE
+                                    search.visibility = View.GONE
+                                }
+
+                                adapter.update_list(logs_list)
+                            }
                         }
 
-                    }).authenticate(promt)
-        })
-
-        recy.adapter = adapter
-        recy.layoutManager = LinearLayoutManager(this)
-
-
-
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 100)
-        }
-
-        if (pref.getBoolean("service", false)) {
-            service_status.setImageResource(R.drawable.play_button)
-            activate_info.setImageResource(R.drawable.circle_green)
-        }
-
-        if (db.select()) {
-            scope = lifecycleScope.launch(Dispatchers.IO, start = CoroutineStart.LAZY) {
-                for (position in 0..logs_list.size - 1) {
-                    val (time, note, iv) = logs_list[position]
-
-                    val ks = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-                    val c = Cipher.getInstance("AES/GCM/NoPadding")
-                    c.init(Cipher.DECRYPT_MODE, ks.getKey(pref.getString("key_u", ""), null), GCMParameterSpec(128, Base64.getDecoder().decode(iv)))
-                    logs_list[position].time = String(c.doFinal(Base64.getDecoder().decode(time)))
+                    }, {})
                 }
+                setNegativeButton("No") {_, _ -> }
+            }.show()
+
+        })
+        recy.adapter = adapter
+        recy.layoutManager = LinearLayoutManager(this).apply {
+            reverseLayout = true
+            stackFromEnd = true
+        }
+
+        if (pref.getBoolean("db_full", false)) {
+
+            val load_data = load(this, R.raw.desen_logs, "Decrypting the values")
+
+            lifecycleScope.launch (Dispatchers.IO){
+
+                for ((id, json_meta_d, json_secure_d, en) in db.select()) {
+
+                    val json = JSONObject(json_meta_d)
+                    val c = cip_ins(pref, Cipher.DECRYPT_MODE, json.getString("meta_iv"))
+
+                    logs_list = logs_list.plus(logs_data(id, String(c.doFinal(Base64.getDecoder().decode(json.getString("meta_data")))), json_secure_d, en))
+
+                }
+
                 withContext(Dispatchers.Main) {
+                    load_data.dismiss()
+                    information.visibility = View.GONE
                     adapter.update_list(logs_list)
-                    scope.cancel()
                 }
             }
-            scope.start()
-        }else {
-            information.visibility = View.VISIBLE
+
+        } else {
+            search.visibility = View.GONE
         }
 
+        search.setOnQueryTextListener(object: SearchView.OnQueryTextListener {
+            override fun onQueryTextChange(query: String?): Boolean {
+
+                val new_list = logs_list.filter { Regex(".*$query.*").matches(it.time) }
+                adapter.update_list(new_list)
+
+                return true
+            }
+
+            override fun onQueryTextSubmit(p0: String?): Boolean = false
+
+        })
 
         service_status.setOnClickListener {
-            MaterialAlertDialogBuilder(this).apply {
-
-                setNegativeButton("Close") { _, _ -> }
-
+            create_biometric(this, {
                 if (pref.getBoolean("service", false)) {
-                    setTitle("You want to disable logging?")
-                    setMessage("If you disable logging, you will no longer be able to record logs until you enable it again.")
-                    setPositiveButton("Desactivate") { _, _ ->
+                    s_s_icon.setImageResource(R.drawable.no_regi)
 
-
-                        BiometricPrompt(this@MainActivity, ContextCompat.getMainExecutor(this@MainActivity), object : BiometricPrompt.AuthenticationCallback() {
-
-                                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                                    super.onAuthenticationSucceeded(result)
-                                    service_status.setImageResource(R.drawable.pause_button)
-                                    activate_info.setImageResource(R.drawable.circle_red)
-                                    pref.edit().putBoolean("service", false).commit()
-                                    stopService(Intent(applicationContext, log_regi::class.java))
-                                    val manager = getSystemService(NotificationManager::class.java)
-                                    manager.cancel(1)
-                                }
-
-                                override fun onAuthenticationError(
-                                    errorCode: Int,
-                                    errString: CharSequence
-                                ) {
-                                    super.onAuthenticationError(errorCode, errString)
-                                    Toast.makeText(this@MainActivity, "Authentication error", Toast.LENGTH_SHORT).show()
-                                }
-                            }).authenticate(promt)
-                    }
+                    stopService(Intent(this, log_regi::class.java))
+                    Toast.makeText(this, "The log has stopped", Toast.LENGTH_SHORT).show()
                 } else {
-                    setTitle("You want to enable log logging")
-                    setMessage("If you enable this option, NowiLock will record your phone's logs. This may result in increased battery consumption.")
-                    setPositiveButton("Activate") { _, _ ->
+                    s_s_icon.setImageResource(R.drawable.regi)
 
-                        BiometricPrompt(this@MainActivity, ContextCompat.getMainExecutor(this@MainActivity), object : BiometricPrompt.AuthenticationCallback() {
-
-                                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                                    super.onAuthenticationSucceeded(result)
-                                    service_status.setImageResource(R.drawable.play_button)
-                                    activate_info.setImageResource(R.drawable.circle_green)
-                                    pref.edit().putBoolean("service", true).commit()
-                                    ContextCompat.startForegroundService(this@MainActivity, Intent(applicationContext, log_regi::class.java))
-                                }
-
-                                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                                    super.onAuthenticationError(errorCode, errString)
-                                    Toast.makeText(this@MainActivity, "Authentication error", Toast.LENGTH_SHORT).show()
-                                }
-                            }).authenticate(promt)
-                    }
+                    startForegroundService(Intent(this, log_regi::class.java))
+                    Toast.makeText(this, "The log has started", Toast.LENGTH_SHORT).show()
                 }
 
+                pref.edit().putBoolean("service", !pref.getBoolean("service", false)).commit()
 
 
-            }.show()
+            }, {})
         }
 
         window.setFlags(
@@ -238,25 +232,15 @@ class MainActivity : AppCompatActivity() {
             insets
         }
     }
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String?>,
-        grantResults: IntArray,
-        deviceId: Int
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults, deviceId)
 
-        if (requestCode == 100 && grantResults[0] == -1) {
-            Toast.makeText(this, "Notifications are necessary", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(Settings.ACTION_ALL_APPS_NOTIFICATION_SETTINGS))
-            finishAffinity()
-        }
+    override fun onPause() {
+        super.onPause()
+        finish()
     }
-
     override fun onDestroy() {
         super.onDestroy()
         if (!pref.getBoolean("service", false)) {
-            pref.edit().putString("key_u", "").commit()
+            pref.edit().remove(name_p_hash).commit()
         }
     }
 }

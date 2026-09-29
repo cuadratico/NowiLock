@@ -1,8 +1,9 @@
-package com.nowilock
+package com.nowilock.opti_funs
 
 import androidx.core.graphics.toColorInt
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlin.math.log2
+import kotlin.text.iterator
 
 fun entropy (pass: String, porgress: LinearProgressIndicator){
 
@@ -23,7 +24,7 @@ fun entropy (pass: String, porgress: LinearProgressIndicator){
         }else if (mayusculas_l.contains(valor)) {
             if (mayusculas != 26) {mayusculas += 26}
         }else if (numeros_l.contains(valor)) {
-            if (numeros != 9) {numeros += 10}
+            if (numeros != 10) {numeros += 10}
         }else {
             simbolos ++
         }

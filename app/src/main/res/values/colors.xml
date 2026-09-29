@@ -3,6 +3,8 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="blue_nowi">#5898df</color>
+    <color name="b_black">#1b1b1d</color>
+
     <color name="blue_oscuro">#2f4b64</color>
     <color name="grew">#454547</color>
     <color name="white_grew">#cac8cb</color>

@@ -15,5 +15,6 @@
         app:layout_constraintStart_toStartOf="parent"
         android:textSize="50dp"
         android:textColor="@color/white"
+        android:fontFamily="@font/pixel"
         />
 </androidx.constraintlayout.widget.ConstraintLayout>
