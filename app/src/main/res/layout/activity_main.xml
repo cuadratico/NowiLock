@@ -53,7 +53,6 @@
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginBottom="20dp"
         android:background="@drawable/border_25"
-        android:backgroundTint="@color/b_black"
         >
 
         <com.google.android.material.imageview.ShapeableImageView

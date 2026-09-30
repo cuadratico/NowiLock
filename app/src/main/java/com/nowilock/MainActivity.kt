@@ -45,9 +45,8 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        pref = EncryptedSharedPreferences.create(
-            this,
-            "ap", MasterKey.Builder(this).apply {
+        pref = EncryptedSharedPreferences.create(this, "ap",
+            MasterKey.Builder(this).apply {
                 setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             }.build(),
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
